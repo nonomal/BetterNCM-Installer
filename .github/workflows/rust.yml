@@ -1,6 +1,10 @@
 name: Rust
 
 on:
+  release:
+    types:
+    - created
+    - edited
   push:
     branches: [ main ]
   pull_request:
@@ -18,7 +22,19 @@ jobs:
     - uses: actions/checkout@v3
     - name: Switch nightly
       run: 
-        rustup default nightly
+        rustup default nightly; rustup target add i686-pc-windows-msvc
     - name: Build
       run: 
-        cargo build --verbose --release
+        cargo +nightly build --release --verbose -Z build-std=core,alloc,std,panic_abort -Z build-std-features=panic_immediate_abort --target i686-pc-windows-msvc 
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3.1.1
+      with:
+        name: BetterNCM-Installer
+        path: ${{ github.workspace }}/target/i686-pc-windows-msvc/release/betterncm_installer.exe
+    - name: Upload to Release Action
+      if: ${{ github.event_name == 'release' }}
+      uses: Shopify/upload-to-release@v1.0.1
+      with:
+        name: betterncm_installer.exe
+        path: ${{ github.workspace }}/target/i686-pc-windows-msvc/release/betterncm_installer.exe
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
